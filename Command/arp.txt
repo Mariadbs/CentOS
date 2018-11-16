@@ -1,0 +1,267 @@
+[arp命令总结]
+
+#-------------------------------------------------------------------------------------------#
+用 途：
+
+
+    该命令用于显示和修改“地址解析协议(ARP)”缓存中的项目。
+
+    ARP缓存中包含一个或多个表，它们用于存储IP地址及其经过解析的以太网或令牌环物理地址。
+
+    计算机上安装的每一个以太网或令牌环网络适配器都有自己单独的表。
+
+    如果在没有参数的情况下使用，则ARP命令将显示帮助信息。
+
+#-------------------------------------------------------------------------------------------#
+语 法：
+
+    arp [-vn]  [<HW>] [-i <if>] [-a] [<hostname>]             <-Display ARP cache
+
+    arp [-v]          [-i <if>] -d  <hostname> [pub][nopub]    <-Delete ARP entry
+
+    arp [-vnD] [<HW>] [-i <if>] -f  [<filename>]              <-Add entry from file
+
+    arp [-v]   [<HW>] [-i <if>] -s  <hostname> <hwaddr> [temp][nopub] <-Add entry
+
+    arp [-v]   [<HW>] [-i <if>] -s  <hostname> <hwaddr> [netmask <nm>] pub  <-''-
+
+    arp [-v]   [<HW>] [-i <if>] -Ds <hostname> <if> [netmask <nm>] pub      <-''-
+
+#-------------------------------------------------------------------------------------------#
+选 项：
+
+    -a    #←显示arp缓冲区的所有条目；
+
+    -e    #←以Linux的显示风格显示arp缓冲区中的条目；
+
+    -s<主机><MAC地址>    #←设置指定的主机的IP地址与MAC地址的静态映射；
+
+    -d    #←从arp缓冲区中删除指定主机的arp条目；
+
+    -v    #←在详细模式下显示当前 ARP 项。所有无效项和环回接口上的项都将显示;
+
+    -n    #←不解决名称;
+
+    -i    #←指定要操作arp缓冲区的网络接口；
+
+    -D    #←使用指定接口的硬件地址；
+
+    -A    #←指定协议族;
+
+    -f    #←设置主机的IP地址与MAC地址的静态映射。
+
+    -H    #←指定arp指令使用的地址类型
+
+#-------------------------------------------------------------------------------------------#
+测试：
+
+1、arp命令
+
+
+    我们先看一下linux下的arp命令
+
+    如果开始arp表中的内容为空的话，需要先对某台主机进行一个连接。
+
+    例如：ping一下目标主机来产生一个arp项
+
+
+[root@Web2 ~]# arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+localhost                ether   94:DE:80:20:B4:04   C                     eth0
+
+说明如下：
+
+    Address：主机的IP地址
+
+    Hwtype：主机的硬件类型
+
+    Hwaddress：主机的硬件地址
+
+    Flags Mask：记录标志，"C"表示arp高速缓存中的条目，"M"表示静态的arp条目。
+
+
+用"arp -a"命令可以显示主机地址与IP地址的对应表，也就是机器中所保存的arp缓存信息。
+
+这个高速缓存存放了最近Internet地址到硬件地址之间的映射记录。
+
+高速缓存中每一项的生存时间一般为20分钟，起始时间从被创建时开始算起。
+
+
+
+2、显示arp缓存表中的（全部）主机，加参数 -a 和参数 -e
+
+arp -a（参数 -a）
+
+arp -e（参数 -e）
+
+[root@Web2 ~]# arp -a
+localhost (192.168.1.118) at 94:DE:80:20:B4:04 [ether] on eth0
+
+可以看到在缓存中有一条192.168.1.100)相对应的arp缓存条目。
+
+[root@Web2 ~]# ping 192.168.1.120
+PING 192.168.1.120 (192.168.1.120) 56(84) bytes of data.
+64 bytes from 192.168.1.120: icmp_seq=1 ttl=64 time=152 ms
+
+[root@Web2 ~]# arp -a
+localhost (192.168.1.118) at 94:DE:80:20:B4:04 [ether] on eth0
+localhost (192.168.1.1) at 8C:21:0A:C1:32:26 [ether] on eth0
+localhost (192.168.1.120) at D0:23:DB:D6:5E:26 [ether] on eth0
+
+[root@Web2 ~]# arp -e
+Address                  HWtype  HWaddress           Flags Mask            Iface
+localhost                ether   94:DE:80:20:B4:04   C                     eth0
+localhost                ether   8C:21:0A:C1:32:26   C                     eth0
+localhost                ether   D0:23:DB:D6:5E:26   C                     eth0
+
+
+
+3、设置一个新的ARP条目，加参数 -s
+
+[root@Web2 ~]# arp -s 192.168.1.11 00:00:00:00:00:00
+
+[root@Web2 ~]# arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+localhost                ether   94:DE:80:20:B4:04   C                     eth0
+localhost                ether   8C:21:0A:C1:32:26   C                     eth0
+localhost                ether   00:00:00:00:00:00   CM                    eth0
+
+[root@Web2 ~]# arp -a
+localhost (192.168.1.118) at 94:DE:80:20:B4:04 [ether] on eth0
+localhost (192.168.1.1) at 8C:21:0A:C1:32:26 [ether] on eth0
+localhost (192.168.1.11) at 00:00:00:00:00:00 [ether] PERM on eth0
+
+
+可以看到我们用 arp -s 选项设置了192.168.1.11对应的硬件地址为00:00:00:00:00:00
+
+
+而且这条映射的标志字段为CM。
+
+
+也就是说我们手工设置的arp选项为静态arp选项，它保持不变没有超时，不像高速缓存中的条目要在一定的时间间隔后更新。
+
+
+如果想让手工设置的arp选项有超时时间的话，可以加上temp选项，我们新添加一条ARP条目。
+
+
+[root@Web2 ~]# arp -s 192.168.1.22 11:11:11:11:11:11 temp
+
+[root@Web2 ~]# arp -a
+localhost (192.168.1.118) at 94:DE:80:20:B4:04 [ether] on eth0
+localhost (192.168.1.22) at 11:11:11:11:11:11 [ether] on eth0
+localhost (192.168.1.1) at 8C:21:0A:C1:32:26 [ether] on eth0
+localhost (192.168.1.11) at 00:00:00:00:00:00 [ether] PERM on eth0
+
+[root@Web2 ~]# arp
+Address                  HWtype  HWaddress           Flags Mask            Iface
+localhost                ether   94:DE:80:20:B4:04   C                     eth0
+localhost                ether   11:11:11:11:11:11   C                     eth0
+localhost                ether   8C:21:0A:C1:32:26   C                     eth0
+localhost                ether   00:00:00:00:00:00   CM                    eth0
+
+可以看到标志字段的静态arp标志"M"已经去掉了，我们手工加上的是一条动态条目。
+
+
+
+4、删除指定的项，加参数 -d
+
+
+    请大家注意arp静态条目与动态条目的区别。
+
+    在不同的系统中，手工设置的arp静态条目是有区别的。
+
+    在Linux和win2000中，静态条目不会因为伪造的arp响应包而改变，而动态条目会改变。
+
+    而在win98中，手工设置的静态条目会因为收到伪造的arp响应包而改变。
+
+    如果您想删除某个arp条目（包括静态条目），可以用下面的命令：
+
+[root@Web2 ~]# arp -a
+localhost (192.168.1.118) at 94:DE:80:20:B4:04 [ether] on eth0
+localhost (192.168.1.22) at 11:11:11:11:11:11 [ether] on eth0
+localhost (192.168.1.1) at 8C:21:0A:C1:32:26 [ether] on eth0
+localhost (192.168.1.11) at 00:00:00:00:00:00 [ether] PERM on eth0
+
+[root@Web2 ~]# arp -d 192.168.1.22
+
+[root@Web2 ~]# arp -a
+localhost (192.168.1.118) at 94:DE:80:20:B4:04 [ether] on eth0
+localhost (192.168.1.22) at <incomplete> on eth0
+localhost (192.168.1.1) at 8C:21:0A:C1:32:26 [ether] on eth0
+localhost (192.168.1.11) at 00:00:00:00:00:00 [ether] PERM on eth0
+
+可以看到 192.168.1.22 的arp条目已经是不完整的了。
+
+
+执行清除所有arp 缓存命令
+
+
+[root@Web2 ~]# arp -n|awk '/^[1-9]/{print "arp -d " $1}'|sh -x
+
+
+
+5、从文件中读取或从 /etc/ethers 读取绑定的arp列表
+
+首先要编辑/etc/ethers文件，把局域网内的IP地址及对应的MAC地址添加到此文件。
+
+[root@Web2 ~]# vi /etc/ethers      #←添加如下内容：
+
+192.168.1.1   E0:05:C5:39:8A:54
+192.168.1.100 00:1F:16:09:9C:81
+
+#←注意mac大写，而且没有O只有零，ip和mac空格。
+
+[root@Web2 ~]# arp -f             #←执行保存的绑定
+
+
+#-------------------------------------------------------------------------------------------#
+案例分析：
+
+    Linux系统下如何有效防御ARP攻击？
+
+
+方案：
+
+1、将 IP 和 MAC 地址导入ethers文件
+
+[root@Web2 ~]# arp -a
+? (192.168.1.118) at 94:DE:80:20:B4:04 [ether] on eth0
+? (192.168.1.1) at E0:05:C5:39:8A:54 [ether] PERM on eth0
+? (192.168.1.100) at 00:1F:16:09:9C:81 [ether] PERM on eth0
+? (192.168.1.11) at 00:00:00:00:00:00 [ether] PERM on eth0
+
+[root@Web2 ~]# cp /etc/ethers /etc/ethers-`date +%F`
+
+[root@Web2 ~]# arp -a > /etc/ethers
+
+
+2、删除 /etc/ethers 文件内的多余内容
+
+ethers文件内容必须格式如下：
+
+192.168.1.X XX:XX:XX:XX:XX
+192.168.1.X XX:XX:XX:XX:XX
+…
+
+//注意mac大写，而且没有O只有零，ip和mac空格
+
+操作如下：
+
+[root@Web2 ~]# vi /etc/ethers
+
+192.168.1.1   E0:05:C5:39:8A:54
+192.168.1.100 00:1F:16:09:9C:81
+
+
+3、打开并修改 /etc/rc.local 启动项文件
+
+启动的时候执行 arp -f 按照 /etc/ethers 中的内容绑定
+
+在 /etc/rc.local 文件中最后加一行：
+
+[root@Web2 ~]# arp -f /etc/ethers
+
+再次执行arp -a命令，如下图，若句尾多了一个：PERM，则表示手动绑定生效。
+
+#-------------------------------------------------------------------------------------------#
+(全文完)
